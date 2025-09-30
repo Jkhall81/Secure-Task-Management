@@ -42,6 +42,11 @@
           "codeCoverage": true
         }
       }
+    },
+    "@nx/js:tsc": {
+      "cache": true,
+      "dependsOn": ["^build"],
+      "inputs": ["production", "^production"]
     }
   },
   "generators": {
@@ -51,5 +56,25 @@
       "style": "css",
       "unitTestRunner": "jest"
     }
+  },
+  "plugins": [
+    {
+      "plugin": "@nx/webpack/plugin",
+      "options": {
+        "buildTargetName": "build",
+        "serveTargetName": "serve",
+        "previewTargetName": "preview",
+        "buildDepsTargetName": "build-deps",
+        "watchDepsTargetName": "watch-deps",
+        "serveStaticTargetName": "serve-static"
+      }
+    }
+  ],
+  "projects": {
+    "api": "apps/api",
+    "dashboard": "apps/dashboard",
+    "api-e2e": "apps/api-e2e",
+    "auth": "libs/auth",
+    "data": "libs/data"
   }
 }
