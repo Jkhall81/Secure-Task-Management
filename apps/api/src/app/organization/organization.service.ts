@@ -13,13 +13,22 @@ export class OrganizationService {
     private readonly userRepo: Repository<User>
   ) {}
 
-  async create(name: string) {
+  async create(name: string, parentId?: number) {
     const org = this.orgRepo.create({ name });
+    if (parentId) {
+      const parent = await this.orgRepo.findOne({ where: { id: parentId } });
+      if (!parent) throw new NotFoundException('Parent org not found');
+      org.parent = parent;
+    }
     return this.orgRepo.save(org);
   }
 
   async findAll() {
     return this.orgRepo.find({ relations: ['users'] });
+  }
+
+  async findAllWithChildren() {
+    return this.orgRepo.find({ relations: ['users', 'children', 'parent'] });
   }
 
   async addUserToOrg(userId: number, orgId: number) {
@@ -31,5 +40,16 @@ export class OrganizationService {
 
     user.organization = org;
     return this.userRepo.save(user);
+  }
+
+  async getOrgScope(orgId: number): Promise<number[]> {
+    const org = await this.orgRepo.findOne({
+      where: { id: orgId },
+      relations: ['children'],
+    });
+    if (!org) throw new NotFoundException('Organization not found');
+
+    // include parent org + its children
+    return [org.id, ...org.children.map((c) => c.id)];
   }
 }

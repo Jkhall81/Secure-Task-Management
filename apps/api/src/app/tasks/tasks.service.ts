@@ -4,17 +4,19 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Task } from '../entities/task.entity';
 import { User } from '../entities/user.entity';
-import { AuditLogService } from '../audit-log/audit-log.service'; // 👈 import
+import { AuditLogService } from '../audit-log/audit-log.service';
+import { OrganizationService } from '../organization/organization.service';
 
 @Injectable()
 export class TasksService {
   constructor(
     @InjectRepository(Task)
     private readonly taskRepo: Repository<Task>,
-    private readonly auditLogService: AuditLogService // 👈 inject
+    private readonly auditLogService: AuditLogService,
+    private readonly orgService: OrganizationService
   ) {}
 
   async create(body: any, user: User) {
@@ -34,9 +36,11 @@ export class TasksService {
   }
 
   async findAll(user: User) {
-    // View tasks for the user’s organization
+    // Get current org + children
+    const orgIds = await this.orgService.getOrgScope(user.organization.id);
+
     return this.taskRepo.find({
-      where: { organization: { id: user.organization.id } },
+      where: { organization: { id: In(orgIds) } },
       relations: ['owner', 'organization'],
     });
   }
@@ -48,8 +52,8 @@ export class TasksService {
     });
     if (!task) throw new NotFoundException('Task not found');
 
-    // Only allow updating if same org
-    if (task.organization.id !== user.organization.id) {
+    const orgIds = await this.orgService.getOrgScope(user.organization.id);
+    if (!orgIds.includes(task.organization.id)) {
       throw new ForbiddenException('Not allowed');
     }
 
@@ -69,7 +73,8 @@ export class TasksService {
     });
     if (!task) throw new NotFoundException('Task not found');
 
-    if (task.organization.id !== user.organization.id) {
+    const orgIds = await this.orgService.getOrgScope(user.organization.id);
+    if (!orgIds.includes(task.organization.id)) {
       throw new ForbiddenException('Not allowed');
     }
 

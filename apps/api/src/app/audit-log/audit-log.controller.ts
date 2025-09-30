@@ -24,10 +24,7 @@ export class AuditLogController {
 
   @Get('user/:id')
   @Roles('owner', 'admin')
-  async findByUser(
-    @Param('id', ParseIntPipe) userId: number, // ✅ ensures it's a valid integer
-    @Req() req: any
-  ) {
+  async findByUser(@Param('id', ParseIntPipe) userId: number, @Req() req: any) {
     return this.auditLogService.findByUserInOrg(
       userId,
       req.user.organization.id
