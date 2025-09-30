@@ -9,6 +9,7 @@ import { User } from '../entities/user.entity';
 import { Role } from '../entities/role.entity';
 import { Organization } from '../entities/organization.entity';
 import * as bcrypt from 'bcrypt';
+import { RegisterDto } from './dto/register.dto';
 import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
@@ -23,31 +24,31 @@ export class AuthService {
     private jwtService: JwtService
   ) {}
 
-  async register(
-    email: string,
-    password: string,
-    roleName: string,
-    orgId: number
-  ): Promise<User> {
+  async register(dto: RegisterDto): Promise<User> {
+    const { email, password, roleName, orgId } = dto;
+
+    // Prevent duplicate users
     const existing = await this.usersRepo.findOne({ where: { email } });
     if (existing) {
       throw new BadRequestException('Email already exists');
     }
 
+    // Hash password
     const hashed = await bcrypt.hash(password, 10);
 
-    // Look up role from DB
+    // Ensure role exists
     const role = await this.roleRepo.findOne({ where: { name: roleName } });
     if (!role) {
       throw new BadRequestException(`Role "${roleName}" not found`);
     }
 
-    // Look up organization from DB
+    // Ensure org exists
     const org = await this.orgRepo.findOne({ where: { id: orgId } });
     if (!org) {
       throw new BadRequestException(`Organization with id ${orgId} not found`);
     }
 
+    // Create user entity
     const user = this.usersRepo.create({
       email,
       password: hashed,
@@ -64,15 +65,15 @@ export class AuthService {
       relations: ['role', 'organization'],
     });
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('User not found');
     }
 
     const passwordValid = await bcrypt.compare(password, user.password);
     if (!passwordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Invalid password');
     }
 
-    // Generate JWT
+    // JWT payload
     const payload = {
       sub: user.id,
       email: user.email,

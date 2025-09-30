@@ -1,8 +1,8 @@
 import {
   IsEmail,
   IsNotEmpty,
-  MinLength,
   IsString,
+  MinLength,
   IsInt,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -11,12 +11,13 @@ export class RegisterDto {
   @IsEmail()
   email: string;
 
-  @IsNotEmpty()
+  @IsString()
   @MinLength(6)
   password: string;
 
   @IsString()
-  role: string;
+  @IsNotEmpty()
+  roleName: string;
 
   @Type(() => Number)
   @IsInt()

@@ -9,6 +9,7 @@ import { AppModule } from './app/app.module';
 import { DataSource } from 'typeorm';
 import { ValidationPipe } from '@nestjs/common';
 import { seedRolesAndPermissions } from './app/seeds/role-permission.seed';
+import { seedOrganizations } from './app/seeds/organization.seed';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -24,7 +25,9 @@ async function bootstrap() {
   );
 
   const dataSource = app.get(DataSource);
+
   await seedRolesAndPermissions(dataSource);
+  await seedOrganizations(dataSource);
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
