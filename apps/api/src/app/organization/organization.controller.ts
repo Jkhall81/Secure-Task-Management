@@ -23,7 +23,7 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 
-@ApiTags('Organizations') // Groups endpoints under "Organizations"
+@ApiTags('Organizations')
 @Controller('organizations')
 export class OrganizationController {
   constructor(private readonly orgService: OrganizationService) {}
@@ -43,8 +43,9 @@ export class OrganizationController {
   @ApiOperation({ summary: 'Create a new organization (Owner only)' })
   @ApiBearerAuth()
   @ApiBody({ type: CreateOrganizationDto })
-  async create(@Body() dto: CreateOrganizationDto) {
-    return this.orgService.create(dto.name, dto.parentId);
+  async create(@Body() dto: CreateOrganizationDto, @Req() req: any) {
+    // FIX: Pass the user to the service
+    return this.orgService.create(dto.name, dto.parentId, req.user);
   }
 
   @Get()

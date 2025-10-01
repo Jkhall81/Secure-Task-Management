@@ -33,49 +33,66 @@ export class AuthService {
 
     const hashed = await bcrypt.hash(password, 10);
 
-    let organizations: Organization[] = [];
-
-    // Handle organization assignment
-    if (orgId) {
-      // User is joining existing organization
-      const org = await this.orgRepo.findOne({ where: { id: orgId } });
-      if (!org)
-        throw new BadRequestException(
-          `Organization with id ${orgId} not found`
-        );
-      organizations = [org];
-    } else {
-      // User is creating a new organization
-      const name = dto.orgName || `${email}'s Organization`;
-      const newOrg = this.orgRepo.create({ name });
-      await this.orgRepo.save(newOrg);
-      organizations = [newOrg];
-    }
-
-    // Determine role - if creating org, default to 'owner', otherwise use provided role
+    // Determine role first
     let role: Role;
     if (!roleName && !orgId) {
-      // Creating new org → owner
       role = await this.roleRepo.findOne({ where: { name: 'owner' } });
     } else if (!roleName && orgId) {
-      // Joining existing org without specified role → default to 'user'
       role = await this.roleRepo.findOne({ where: { name: 'user' } });
     } else {
-      // Use provided role
       role = await this.roleRepo.findOne({ where: { name: roleName } });
     }
 
     if (!role) throw new BadRequestException(`Role "${roleName}" not found`);
 
-    // Create user with organizations array
+    // Create user first without organizations
     const user = this.usersRepo.create({
       email,
       password: hashed,
       role,
-      organizations, // This is now an ARRAY
     });
 
-    return this.usersRepo.save(user);
+    const savedUser = await this.usersRepo.save(user);
+
+    let organization: Organization;
+
+    // Handle organization assignment
+    if (orgId) {
+      // User is joining existing organization
+      organization = await this.orgRepo.findOne({
+        where: { id: orgId },
+      });
+      if (!organization) {
+        throw new BadRequestException(
+          `Organization with id ${orgId} not found`
+        );
+      }
+    } else {
+      // User is creating a new organization
+      const name = dto.orgName || `${email}'s Organization`;
+      organization = this.orgRepo.create({ name });
+      await this.orgRepo.save(organization);
+    }
+
+    // Explicitly add user to organization using relation
+    await this.orgRepo
+      .createQueryBuilder()
+      .relation(Organization, 'users')
+      .of(organization.id)
+      .add(savedUser.id);
+
+    // Reload user with organizations to return complete data
+    const userWithOrgs = await this.usersRepo.findOne({
+      where: { id: savedUser.id },
+      relations: ['organizations', 'role'],
+    });
+
+    console.log(
+      'User registered with organizations:',
+      userWithOrgs.organizations
+    );
+
+    return userWithOrgs;
   }
 
   async login(email: string, password: string) {

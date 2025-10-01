@@ -59,15 +59,19 @@ export class DashboardComponent implements OnInit {
     this.authService.getCurrentUser().subscribe({
       next: (user) => {
         console.log('Current user:', user); // Debug log
-        this.currentOrg = user.organization;
+
+        // FIX: Use organizations array, not organization property
+        this.currentOrg = user.organizations?.[0] || null;
+
+        console.log('Current org set to:', this.currentOrg); // Debug log
         this.loadTasks();
       },
       error: (err) => {
         console.error('Failed to load user', err);
         // Fallback: try to get user from localStorage
         const cachedUser = this.authService.getUser();
-        if (cachedUser && cachedUser.organization) {
-          this.currentOrg = cachedUser.organization;
+        if (cachedUser && cachedUser.organizations?.[0]) {
+          this.currentOrg = cachedUser.organizations[0];
           this.loadTasks();
         }
       },

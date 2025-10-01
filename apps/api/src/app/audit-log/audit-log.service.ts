@@ -14,17 +14,25 @@ export class AuditLogService {
   ) {}
 
   async logAction(action: string, targetId: number | null, user: User) {
+    console.log('=== AUDIT LOG DEBUG ===');
+    console.log('User organizations:', user.organizations);
+    console.log('First org:', user.organizations?.[0]);
+
+    // Safe access to organization
+    const userOrganization = user.organizations?.[0];
+    const orgName = userOrganization?.name || 'No Organization';
+
     const log = this.auditRepo.create({
       action,
       targetId,
       user,
-      organization: user.organizations?.[0],
+      organization: userOrganization,
     });
 
     await this.auditRepo.save(log);
 
     console.log(
-      `[AUDIT] ${action} by ${user.email} (org: ${user.organizations?.[0].name}) on target ${targetId}`
+      `[AUDIT] ${action} by ${user.email} (org: ${orgName}) on target ${targetId}`
     );
   }
 
