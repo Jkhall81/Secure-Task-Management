@@ -22,7 +22,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     // Load full user with role + permissions + org
     const user = await this.userRepo.findOne({
       where: { id: payload.sub },
-      relations: ['role', 'role.permissions', 'organization'],
+      relations: ['role', 'role.permissions', 'organizations'],
     });
 
     if (!user) {

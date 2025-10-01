@@ -46,7 +46,7 @@ export class RegisterComponent implements OnInit {
         email: ['', [Validators.required, Validators.email]],
         password: ['', [Validators.required, Validators.minLength(8)]],
         confirmPassword: ['', [Validators.required]],
-        roleName: ['viewer', [Validators.required]], // default safe role
+        roleName: [''], // handle this dynamically
         orgId: [''], // optional → join org
         createOrg: [false], // toggle between join/create
         orgName: [''], // only required when createOrg = true
@@ -80,8 +80,10 @@ export class RegisterComponent implements OnInit {
       this.isLoading = true;
       this.errorMessage = '';
 
-      const { email, password, roleName, orgId, createOrg, orgName } =
+      const { email, password, orgId, createOrg, orgName } =
         this.registerForm.value;
+
+      const roleName = createOrg ? 'owner' : 'viewer';
 
       this.authService
         .register(

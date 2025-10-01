@@ -39,7 +39,7 @@ export class AuthService {
   register(
     email: string,
     password: string,
-    roleName: string,
+    roleName: string | null,
     orgId?: string | null,
     orgName?: string | null
   ): Observable<any> {
@@ -103,5 +103,34 @@ export class AuthService {
 
   getUserEmail(): string | null {
     return this.getUser()?.email ?? null;
+  }
+
+  // ---- NEW METHOD: Get current user from backend ----
+  getCurrentUser(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/me`).pipe(
+      tap((user) => {
+        // Update local storage with fresh user data
+        if (user) {
+          localStorage.setItem(this.userKey, JSON.stringify(user));
+        }
+      })
+    );
+  }
+
+  // ---- Optional: Refresh user data ----
+  refreshUser(): void {
+    this.getCurrentUser().subscribe({
+      next: (user) => {
+        console.log('User data refreshed:', user);
+      },
+      error: (err) => {
+        console.error('Failed to refresh user data:', err);
+      },
+    });
+  }
+
+  // update orgs associated with user
+  updateUserOrganization(orgId: number): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/update-org`, { orgId });
   }
 }

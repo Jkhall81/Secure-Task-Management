@@ -1,64 +1,187 @@
 <div
-  class="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white"
+  class="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white"
 >
-  <div class="flex-1 max-w-7xl mx-auto w-full p-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between mb-8">
-      <h1
-        class="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent"
-      >
-        Task Dashboard
-      </h1>
-      <div class="flex space-x-3">
-        <input
-          type="text"
-          placeholder="Search tasks..."
-          class="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm placeholder-gray-400 focus:ring-2 focus:ring-purple-500"
-        />
-        <button
-          (click)="toggleNewTask()"
-          class="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg hover:from-purple-700 hover:to-pink-700 transition shadow"
+  <!-- Header with Organization -->
+  <header class="border-b border-gray-700 bg-gray-800/50 backdrop-blur-sm">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold">Task Dashboard</h1>
+          <!-- Current Organization Display -->
+          <div class="flex items-center gap-2 mt-1">
+            <span class="text-sm text-gray-400">Organization:</span>
+            <span
+              class="text-sm font-medium text-purple-400"
+              *ngIf="currentOrg"
+            >
+              {{ currentOrg.name }}
+            </span>
+            <span class="text-sm text-gray-500 italic" *ngIf="!currentOrg">
+              Loading...
+            </span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <!-- Search -->
+          <div class="relative">
+            <input
+              type="text"
+              placeholder="Search tasks..."
+              class="bg-gray-700 border border-gray-600 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-purple-500 w-64"
+            />
+            <svg
+              class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              ></path>
+            </svg>
+          </div>
+
+          <!-- New Task Button -->
+          <button
+            (click)="toggleNewTask()"
+            class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors font-medium"
+          >
+            + New Task
+          </button>
+
+          <!-- Organization Menu Trigger -->
+          <button
+            (click)="toggleOrgSidebar()"
+            class="p-2 hover:bg-gray-700 rounded-lg transition-colors border border-gray-600"
+            title="Manage Organizations"
+          >
+            <svg
+              class="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+              ></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Layout with Sidebar -->
+  <div class="flex h-[calc(100vh-80px)]">
+    <!-- Organization Sidebar -->
+    <div
+      [class]="orgSidebarOpen ? 'w-80' : 'w-0'"
+      class="bg-gray-800 border-r border-gray-700 transition-all duration-300 overflow-hidden flex-shrink-0"
+    >
+      <app-org-sidebar
+        [currentOrg]="currentOrg"
+        [organizations]="organizations"
+        (orgSelected)="onOrgSelected($event)"
+        (orgCreated)="onOrgCreated($event)"
+        (sidebarClosed)="orgSidebarOpen = false"
+      ></app-org-sidebar>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 overflow-auto">
+      <div class="container mx-auto px-4 py-6">
+        <!-- New Task Form -->
+        <app-new-task
+          *ngIf="showNewTask"
+          (taskCreated)="handleTaskCreated()"
+          (cancel)="showNewTask = false"
+          [currentOrg]="currentOrg"
+        ></app-new-task>
+
+        <!-- Task Board with CdkDropListGroup -->
+        <div
+          cdkDropListGroup
+          class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6"
         >
-          + New Task
-        </button>
-      </div>
-    </div>
+          <!-- Todo Column -->
+          <div class="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+            <div class="flex items-center justify-between mb-4">
+              <h3
+                class="font-semibold text-lg text-white flex items-center gap-2"
+              >
+                <div class="w-3 h-3 bg-purple-500 rounded-full"></div>
+                To Do
+              </h3>
+              <span
+                class="bg-gray-700 text-gray-300 text-xs px-2 py-1 rounded-full"
+              >
+                {{ todoTasks.length }}
+              </span>
+            </div>
+            <app-task-list
+              status="todo"
+              [tasks]="todoTasks"
+              (taskDropped)="onTaskDropped($event, 'todo')"
+              (taskUpdated)="onTaskUpdated($event)"
+              (taskDeleted)="onTaskDeleted($event)"
+            ></app-task-list>
+          </div>
 
-    <!-- New Task Form -->
-    <div *ngIf="showNewTask" class="mb-8">
-      <app-new-task
-        (taskCreated)="handleTaskCreated()"
-        (closed)="toggleNewTask()"
-      ></app-new-task>
-    </div>
+          <!-- In Progress Column -->
+          <div class="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+            <div class="flex items-center justify-between mb-4">
+              <h3
+                class="font-semibold text-lg text-white flex items-center gap-2"
+              >
+                <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                In Progress
+              </h3>
+              <span
+                class="bg-gray-700 text-gray-300 text-xs px-2 py-1 rounded-full"
+              >
+                {{ inProgressTasks.length }}
+              </span>
+            </div>
+            <app-task-list
+              status="in-progress"
+              [tasks]="inProgressTasks"
+              (taskDropped)="onTaskDropped($event, 'in-progress')"
+              (taskUpdated)="onTaskUpdated($event)"
+              (taskDeleted)="onTaskDeleted($event)"
+            ></app-task-list>
+          </div>
 
-    <!-- Task Board -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1" cdkDropListGroup>
-      <div class="bg-white/5 border border-white/10 rounded-xl p-4">
-        <h2 class="text-lg font-semibold mb-4">To Do</h2>
-        <app-task-list
-          [status]="'todo'"
-          [tasks]="todoTasks"
-          (taskDropped)="onTaskDropped($event, 'todo')"
-        ></app-task-list>
-      </div>
-
-      <div class="bg-white/5 border border-white/10 rounded-xl p-4">
-        <h2 class="text-lg font-semibold mb-4">In Progress</h2>
-        <app-task-list
-          [status]="'in-progress'"
-          [tasks]="inProgressTasks"
-          (taskDropped)="onTaskDropped($event, 'in-progress')"
-        ></app-task-list>
-      </div>
-
-      <div class="bg-white/5 border border-white/10 rounded-xl p-4">
-        <h2 class="text-lg font-semibold mb-4">Done</h2>
-        <app-task-list
-          [status]="'done'"
-          [tasks]="doneTasks"
-          (taskDropped)="onTaskDropped($event, 'done')"
-        ></app-task-list>
+          <!-- Done Column -->
+          <div class="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+            <div class="flex items-center justify-between mb-4">
+              <h3
+                class="font-semibold text-lg text-white flex items-center gap-2"
+              >
+                <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                Done
+              </h3>
+              <span
+                class="bg-gray-700 text-gray-300 text-xs px-2 py-1 rounded-full"
+              >
+                {{ doneTasks.length }}
+              </span>
+            </div>
+            <app-task-list
+              status="done"
+              [tasks]="doneTasks"
+              (taskDropped)="onTaskDropped($event, 'done')"
+              (taskUpdated)="onTaskUpdated($event)"
+              (taskDeleted)="onTaskDeleted($event)"
+            ></app-task-list>
+          </div>
+        </div>
       </div>
     </div>
   </div>

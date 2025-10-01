@@ -18,13 +18,13 @@ export class AuditLogService {
       action,
       targetId,
       user,
-      organization: user.organization,
+      organization: user.organizations?.[0],
     });
 
     await this.auditRepo.save(log);
 
     console.log(
-      `[AUDIT] ${action} by ${user.email} (org: ${user.organization?.name}) on target ${targetId}`
+      `[AUDIT] ${action} by ${user.email} (org: ${user.organizations?.[0].name}) on target ${targetId}`
     );
   }
 

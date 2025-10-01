@@ -29,10 +29,11 @@ export class RegisterDto {
   @ApiProperty({
     example: 'viewer',
     description: 'The role assigned to the user (e.g., owner, admin, viewer)',
+    required: false,
   })
   @IsString()
-  @IsNotEmpty()
-  roleName: string;
+  @IsOptional() // Make this optional
+  roleName?: string; // Make optional
 
   @ApiProperty({
     example: 1,

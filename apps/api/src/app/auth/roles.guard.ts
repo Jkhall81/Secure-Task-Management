@@ -18,13 +18,21 @@ export class RolesGuard implements CanActivate {
     );
 
     if (!requiredRoles) {
-      return true; // no roles → public route (but still JWT protected if guard is used)
+      return true; // no roles → public route
     }
 
     const { user } = context.switchToHttp().getRequest();
     if (!user) throw new ForbiddenException('User not found in request');
 
-    if (!requiredRoles.includes(user.role)) {
+    // DEBUG: Log what we're checking
+    console.log('RolesGuard Debug:', {
+      requiredRoles,
+      userRole: user.role,
+      userRoleName: user.role?.name,
+    });
+
+    // FIX: Check user.role.name instead of user.role
+    if (!user.role || !requiredRoles.includes(user.role.name)) {
       throw new ForbiddenException('You do not have access to this resource');
     }
 

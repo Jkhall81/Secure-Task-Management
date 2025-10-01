@@ -1,5 +1,20 @@
-import { IsString, IsOptional, Length } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  Length,
+  IsNumber,
+  IsInt,
+  IsEnum,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+export enum TaskCategory {
+  WORK = 'work',
+  PERSONAL = 'personal',
+  SHOPPING = 'shopping',
+  HEALTH = 'health',
+  OTHER = 'other',
+}
 
 export class CreateTaskDto {
   @ApiProperty({
@@ -28,5 +43,24 @@ export class CreateTaskDto {
   })
   @IsString()
   @IsOptional()
-  status?: string; // could later be restricted to enum values
+  status?: string;
+
+  @ApiPropertyOptional({
+    example: 'work',
+    description: 'The category of the task',
+    enum: TaskCategory,
+    default: TaskCategory.WORK,
+  })
+  @IsEnum(TaskCategory)
+  @IsOptional()
+  category?: TaskCategory;
+
+  @ApiPropertyOptional({
+    example: 2,
+    description: 'The organization ID where the task should be created',
+  })
+  @IsNumber()
+  @IsInt()
+  @IsOptional()
+  organizationId?: number;
 }

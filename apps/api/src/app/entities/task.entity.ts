@@ -19,6 +19,12 @@ export class Task {
   @Column({ default: false })
   completed: boolean;
 
+  @Column({
+    type: 'varchar',
+    default: 'work',
+  })
+  category: string;
+
   @ManyToOne(() => User, (user) => user.id)
   owner: User;
 

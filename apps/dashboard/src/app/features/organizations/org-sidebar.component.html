@@ -1,0 +1,307 @@
+<div class="h-full flex flex-col bg-gray-800 border-r border-gray-700">
+  <!-- Header -->
+  <div class="flex items-center justify-between p-4 border-b border-gray-700">
+    <h2 class="text-lg font-semibold">Organizations</h2>
+    <button
+      (click)="closeSidebar()"
+      class="p-1 hover:bg-gray-700 rounded transition-colors"
+    >
+      <svg
+        class="w-5 h-5"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M6 18L18 6M6 6l12 12"
+        ></path>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Current Organization -->
+  <div class="p-4 border-b border-gray-700">
+    <h3 class="text-sm font-medium text-gray-400 mb-2">Current</h3>
+    <div class="flex items-center gap-2 p-2 bg-gray-700 rounded-lg">
+      <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+      <span class="text-sm font-medium">{{
+        currentOrg?.name || 'No organization'
+      }}</span>
+    </div>
+  </div>
+
+  <!-- Organizations List -->
+  <div class="flex-1 overflow-y-auto p-4">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-sm font-medium text-gray-400">All Organizations</h3>
+      <button
+        (click)="openCreateOrgModal()"
+        class="text-xs bg-purple-600 hover:bg-purple-700 px-2 py-1 rounded transition-colors"
+      >
+        + New
+      </button>
+    </div>
+
+    <div class="space-y-2">
+      <!-- Parent Organizations -->
+      <div *ngFor="let org of parentOrganizations" class="space-y-1">
+        <!-- Parent Org with delete button -->
+        <div class="flex items-center group">
+          <button
+            (click)="selectOrg(org)"
+            [class]="
+              'flex-1 text-left p-2 rounded transition-colors ' +
+              (currentOrg?.id === org.id
+                ? 'bg-purple-600/20 border border-purple-500/30'
+                : 'hover:bg-gray-700')
+            "
+          >
+            <div class="flex items-center gap-2">
+              <svg
+                class="w-4 h-4 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                ></path>
+              </svg>
+              <span class="text-sm">{{ org.name }}</span>
+              <span
+                *ngIf="hasChildren(org.id)"
+                class="text-xs text-gray-500 ml-auto"
+              >
+                {{ getChildOrgs(org.id).length }}
+              </span>
+            </div>
+          </button>
+
+          <!-- Delete button for parent org -->
+          <button
+            (click)="onDeleteOrg(org, $event)"
+            class="opacity-0 group-hover:opacity-100 p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all duration-200 ml-1 flex-shrink-0"
+            title="Delete organization"
+          >
+            <svg
+              class="w-3.5 h-3.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              ></path>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Child Organizations -->
+        <div
+          *ngFor="let child of getChildOrgs(org.id)"
+          class="ml-6 border-l border-gray-600 pl-2"
+        >
+          <div class="flex items-center group">
+            <button
+              (click)="selectOrg(child)"
+              [class]="
+                'flex-1 text-left p-2 rounded transition-colors ' +
+                (currentOrg?.id === child.id
+                  ? 'bg-purple-600/20 border border-purple-500/30'
+                  : 'hover:bg-gray-700')
+              "
+            >
+              <div class="flex items-center gap-2">
+                <svg
+                  class="w-3 h-3 text-gray-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 5l7 7-7 7"
+                  ></path>
+                </svg>
+                <span class="text-sm text-gray-300">{{ child.name }}</span>
+              </div>
+            </button>
+
+            <!-- Delete button for child org -->
+            <button
+              (click)="onDeleteOrg(child, $event)"
+              class="opacity-0 group-hover:opacity-100 p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all duration-200 ml-1 flex-shrink-0"
+              title="Delete organization"
+            >
+              <svg
+                class="w-3.5 h-3.5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                ></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div
+        *ngIf="parentOrganizations.length === 0"
+        class="text-center py-8 text-gray-500"
+      >
+        <svg
+          class="w-12 h-12 mx-auto mb-3 text-gray-600"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="1"
+            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+          ></path>
+        </svg>
+        <p class="text-sm">No organizations yet</p>
+        <button
+          (click)="openCreateOrgModal()"
+          class="text-purple-400 hover:text-purple-300 text-xs mt-2"
+        >
+          Create your first organization
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create Organization Modal -->
+<div
+  *ngIf="showCreateOrgModal"
+  class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+>
+  <div
+    class="bg-gray-800 rounded-lg p-6 w-full max-w-md border border-gray-700"
+  >
+    <h3 class="text-lg font-semibold mb-4">Create Organization</h3>
+
+    <div class="space-y-4">
+      <!-- Organization Name -->
+      <div>
+        <label class="block text-sm font-medium text-gray-300 mb-1"
+          >Organization Name</label
+        >
+        <input
+          type="text"
+          [(ngModel)]="newOrgName"
+          placeholder="Enter organization name"
+          class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-purple-500"
+          (keydown.enter)="createOrganization()"
+        />
+      </div>
+
+      <!-- Parent Organization (Optional) -->
+      <div>
+        <label class="block text-sm font-medium text-gray-300 mb-1"
+          >Parent Organization (Optional)</label
+        >
+        <select
+          [(ngModel)]="selectedParentId"
+          class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-purple-500"
+        >
+          <option [value]="undefined">None (Top Level)</option>
+          <option *ngFor="let org of parentOrganizations" [value]="org.id">
+            {{ org.name }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex gap-3 mt-6">
+      <button
+        (click)="closeCreateOrgModal()"
+        class="flex-1 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded transition-colors"
+        [disabled]="isLoading"
+      >
+        Cancel
+      </button>
+      <button
+        (click)="createOrganization()"
+        [disabled]="!newOrgName.trim() || isLoading"
+        class="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white px-4 py-2 rounded transition-colors flex items-center justify-center gap-2"
+      >
+        <span *ngIf="isLoading">Creating...</span>
+        <span *ngIf="!isLoading">Create</span>
+        <svg
+          *ngIf="isLoading"
+          class="w-4 h-4 animate-spin"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+          ></circle>
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          ></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div
+  *ngIf="showDeleteModal"
+  class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+>
+  <div
+    class="bg-gray-800 rounded-lg p-6 w-full max-w-md border border-gray-700"
+  >
+    <h3 class="text-lg font-semibold mb-2 text-white">Delete Organization</h3>
+    <p class="text-gray-300 mb-6">
+      Are you sure you want to delete "{{ orgToDelete?.name }}"? This action
+      cannot be undone and all associated data will be lost.
+    </p>
+
+    <div class="flex gap-3 justify-end">
+      <button
+        (click)="cancelDelete()"
+        class="px-4 py-2 text-gray-300 hover:text-white border border-gray-600 rounded-lg hover:bg-gray-700 transition-colors"
+      >
+        Cancel
+      </button>
+      <button
+        (click)="confirmDelete()"
+        class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+      >
+        Delete
+      </button>
+    </div>
+  </div>
+</div>

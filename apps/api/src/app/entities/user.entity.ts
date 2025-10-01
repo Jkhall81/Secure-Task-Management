@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  ManyToMany,
+  JoinTable,
+} from 'typeorm';
 import { Organization } from './organization.entity';
 import { Role } from './role.entity';
 
@@ -11,11 +18,12 @@ export class User {
   email: string;
 
   @Column()
-  password: string; // hashed
+  password: string;
 
   @ManyToOne(() => Role, (role) => role.users, { eager: true })
   role: Role;
 
-  @ManyToOne(() => Organization, (org) => org.users)
-  organization: Organization;
+  @ManyToMany(() => Organization, (org) => org.users)
+  @JoinTable()
+  organizations: Organization[];
 }

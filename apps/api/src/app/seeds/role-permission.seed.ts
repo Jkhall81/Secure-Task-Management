@@ -14,6 +14,10 @@ export async function seedRolesAndPermissions(dataSource: DataSource) {
     'DELETE_TASK',
     'VIEW_TASK',
     'VIEW_AUDIT_LOG',
+    'CREATE_ORGANIZATION',
+    'UPDATE_ORGANIZATION',
+    'DELETE_ORGANIZATION',
+    'VIEW_ORGANIZATION',
   ];
 
   // Ensure permissions exist in DB
@@ -28,13 +32,32 @@ export async function seedRolesAndPermissions(dataSource: DataSource) {
   }
 
   // Destructure for readability
-  const [createTask, updateTask, deleteTask, viewTask, viewAuditLog] =
-    savedPerms;
+  const [
+    createTask,
+    updateTask,
+    deleteTask,
+    viewTask,
+    viewAuditLog,
+    createOrganization,
+    updateOrganization,
+    deleteOrganization,
+    viewOrganization,
+  ] = savedPerms;
 
   // Define roles with permissions
   const rolesConfig: Record<string, Permission[]> = {
-    owner: [createTask, updateTask, deleteTask, viewTask, viewAuditLog],
-    admin: [createTask, updateTask, deleteTask, viewTask],
+    owner: [
+      createTask,
+      updateTask,
+      deleteTask,
+      viewTask,
+      viewAuditLog,
+      createOrganization,
+      updateOrganization,
+      deleteOrganization,
+      viewOrganization,
+    ],
+    admin: [createTask, updateTask, deleteTask, viewTask, viewOrganization],
     viewer: [viewTask],
   };
 

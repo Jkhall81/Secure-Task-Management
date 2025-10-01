@@ -1,5 +1,6 @@
-import { IsString, IsOptional, Length } from 'class-validator';
+import { IsString, IsOptional, Length, IsEnum } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { TaskCategory } from './create-task.dto';
 
 export class UpdateTaskDto {
   @ApiPropertyOptional({
@@ -31,4 +32,13 @@ export class UpdateTaskDto {
   @IsString()
   @IsOptional()
   status?: string;
+
+  @ApiPropertyOptional({
+    example: 'work',
+    description: 'Category of the task',
+    enum: TaskCategory,
+  })
+  @IsEnum(TaskCategory)
+  @IsOptional()
+  category?: TaskCategory;
 }

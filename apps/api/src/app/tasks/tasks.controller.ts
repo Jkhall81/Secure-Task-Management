@@ -8,6 +8,7 @@ import {
   Param,
   UseGuards,
   Req,
+  Query,
 } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -41,8 +42,8 @@ export class TasksController {
   @ApiOperation({ summary: 'Create a new task' })
   @ApiResponse({ status: 201, description: 'Task created successfully' })
   @ApiResponse({ status: 403, description: 'Forbidden: missing permission' })
-  findAll(@Req() req: any) {
-    return this.tasksService.findAll(req.user);
+  findAll(@Req() req: any, @Query('orgId') orgId?: number) {
+    return this.tasksService.findAll(req.user, orgId);
   }
 
   @Put(':id')

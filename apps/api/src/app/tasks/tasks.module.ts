@@ -5,10 +5,11 @@ import { TasksController } from './tasks.controller';
 import { Task } from '../entities/task.entity';
 import { AuditLogModule } from '../audit-log/audit-log.module';
 import { OrganizationModule } from '../organization/organization.module';
+import { Organization } from '../entities/organization.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Task]),
+    TypeOrmModule.forFeature([Task, Organization]),
     AuditLogModule,
     OrganizationModule,
   ],

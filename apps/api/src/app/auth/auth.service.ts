@@ -2,6 +2,7 @@ import {
   Injectable,
   BadRequestException,
   UnauthorizedException,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -32,35 +33,46 @@ export class AuthService {
 
     const hashed = await bcrypt.hash(password, 10);
 
-    let org: Organization;
+    let organizations: Organization[] = [];
 
+    // Handle organization assignment
     if (orgId) {
-      org = await this.orgRepo.findOne({ where: { id: orgId } });
+      // User is joining existing organization
+      const org = await this.orgRepo.findOne({ where: { id: orgId } });
       if (!org)
         throw new BadRequestException(
           `Organization with id ${orgId} not found`
         );
+      organizations = [org];
     } else {
+      // User is creating a new organization
       const name = dto.orgName || `${email}'s Organization`;
-      org = this.orgRepo.create({ name });
-      await this.orgRepo.save(org);
+      const newOrg = this.orgRepo.create({ name });
+      await this.orgRepo.save(newOrg);
+      organizations = [newOrg];
     }
 
-    // If no roleName passed, default to 'owner' when creating org, else use provided
+    // Determine role - if creating org, default to 'owner', otherwise use provided role
     let role: Role;
     if (!roleName && !orgId) {
+      // Creating new org → owner
       role = await this.roleRepo.findOne({ where: { name: 'owner' } });
+    } else if (!roleName && orgId) {
+      // Joining existing org without specified role → default to 'user'
+      role = await this.roleRepo.findOne({ where: { name: 'user' } });
     } else {
+      // Use provided role
       role = await this.roleRepo.findOne({ where: { name: roleName } });
     }
 
     if (!role) throw new BadRequestException(`Role "${roleName}" not found`);
 
+    // Create user with organizations array
     const user = this.usersRepo.create({
       email,
       password: hashed,
       role,
-      organization: org,
+      organizations, // This is now an ARRAY
     });
 
     return this.usersRepo.save(user);
@@ -69,7 +81,7 @@ export class AuthService {
   async login(email: string, password: string) {
     const user = await this.usersRepo.findOne({
       where: { email },
-      relations: ['role', 'organization'],
+      relations: ['role', 'organizations'],
     });
     if (!user) {
       throw new UnauthorizedException('User not found');
@@ -85,7 +97,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role: user.role.name,
-      orgId: user.organization?.id,
+      orgId: user.organizations?.[0]?.id,
     };
     const token = await this.jwtService.signAsync(payload);
 
@@ -95,8 +107,34 @@ export class AuthService {
         id: user.id,
         email: user.email,
         role: user.role.name,
-        organization: user.organization?.name,
+        organization: user.organizations?.[0]?.name,
       },
     };
+  }
+
+  async updateUserOrganization(userId: number, orgId: number) {
+    const user = await this.usersRepo.findOne({
+      where: { id: userId },
+      relations: ['organizations'],
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const org = await this.orgRepo.findOne({ where: { id: orgId } });
+    if (!org) {
+      throw new NotFoundException('Organization not found');
+    }
+
+    // Update user's organization
+    if (user.organizations.length > 0) {
+      user.organizations[0] = org;
+    } else {
+      user.organizations.push(org);
+    }
+    await this.usersRepo.save(user);
+
+    return { message: 'Organization updated successfully' };
   }
 }

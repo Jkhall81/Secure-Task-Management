@@ -2,6 +2,8 @@ import {
   Controller,
   Post,
   Get,
+  Delete,
+  Req,
   Body,
   Param,
   UseGuards,
@@ -18,6 +20,7 @@ import {
   ApiOperation,
   ApiParam,
   ApiBody,
+  ApiResponse,
 } from '@nestjs/swagger';
 
 @ApiTags('Organizations') // Groups endpoints under "Organizations"
@@ -67,5 +70,21 @@ export class OrganizationController {
     @Param('userId', ParseIntPipe) userId: number
   ) {
     return this.orgService.addUserToOrg(userId, orgId);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('owner') // Only owners can delete organizations
+  @ApiOperation({ summary: 'Delete an organization (Owner only)' })
+  @ApiBearerAuth()
+  @ApiParam({ name: 'id', type: Number, description: 'Organization ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Organization deleted successfully',
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden: not owner' })
+  @ApiResponse({ status: 404, description: 'Organization not found' })
+  async remove(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.orgService.remove(id, req.user);
   }
 }

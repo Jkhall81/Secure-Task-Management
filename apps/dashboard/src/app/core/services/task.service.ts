@@ -10,8 +10,9 @@ export class TaskService {
   constructor(private http: HttpClient) {}
 
   // Get all tasks
-  getTasks(): Observable<Task[]> {
-    return this.http.get<Task[]>(this.apiUrl);
+  getTasks(orgId?: number): Observable<Task[]> {
+    const params = orgId ? `?orgId=${orgId}` : '';
+    return this.http.get<Task[]>(`${this.apiUrl}${params}`);
   }
 
   // Get tasks filtered by status

@@ -1,12 +1,13 @@
 import {
   Injectable,
   NotFoundException,
-  ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Task } from '../entities/task.entity';
 import { User } from '../entities/user.entity';
+import { Organization } from '../entities/organization.entity';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { OrganizationService } from '../organization/organization.service';
 
@@ -15,32 +16,59 @@ export class TasksService {
   constructor(
     @InjectRepository(Task)
     private readonly taskRepo: Repository<Task>,
+    @InjectRepository(Organization)
+    private readonly orgRepo: Repository<Organization>,
     private readonly auditLogService: AuditLogService,
     private readonly orgService: OrganizationService
   ) {}
 
   async create(body: any, user: User) {
+    console.log('=== BACKEND TASK CREATION ===');
+    console.log('Received body:', body);
+    console.log('User:', user.id, user.email);
+
+    const organizationId = body.organizationId || user.organizations?.[0]?.id;
+
+    console.log('Organization ID to use:', organizationId);
+
+    const org = await this.orgRepo.findOne({ where: { id: organizationId } });
+    console.log('Found organization:', org);
+
+    if (!org) throw new BadRequestException('Organization not found');
+
     const task = this.taskRepo.create({
       title: body.title,
       description: body.description,
       status: body.status || 'pending',
-      organization: user.organization, // scope to same org
-      owner: user, // relation back to user
+      category: body.category || 'work',
+      organization: org,
+      owner: user,
     });
-    const saved = await this.taskRepo.save(task);
 
-    // log audit
-    await this.auditLogService.logAction('CREATE_TASK', saved.id, user);
+    console.log('Task entity created:', task);
 
-    return saved;
+    try {
+      const saved = await this.taskRepo.save(task);
+      console.log('Task saved successfully:', saved.id, saved.title);
+
+      // Verify it was actually saved
+      const verified = await this.taskRepo.findOne({ where: { id: saved.id } });
+      console.log('Verified task from DB:', verified);
+
+      await this.auditLogService.logAction('CREATE_TASK', saved.id, user);
+      return saved;
+    } catch (error) {
+      console.error('Error saving task:', error);
+      throw error;
+    }
   }
 
-  async findAll(user: User) {
-    // Get current org + children
-    const orgIds = await this.orgService.getOrgScope(user.organization.id);
+  async findAll(user: User, orgId?: number) {
+    // Use specific orgId if provided, otherwise user's current org
+    const targetOrgId = orgId || user.organizations?.[0]?.id;
 
     return this.taskRepo.find({
-      where: { organization: { id: In(orgIds) } },
+      where: { organization: { id: targetOrgId } },
       relations: ['owner', 'organization'],
     });
   }
@@ -51,11 +79,6 @@ export class TasksService {
       relations: ['owner', 'organization'],
     });
     if (!task) throw new NotFoundException('Task not found');
-
-    const orgIds = await this.orgService.getOrgScope(user.organization.id);
-    if (!orgIds.includes(task.organization.id)) {
-      throw new ForbiddenException('Not allowed');
-    }
 
     Object.assign(task, body);
     const saved = await this.taskRepo.save(task);
@@ -72,11 +95,6 @@ export class TasksService {
       relations: ['owner', 'organization'],
     });
     if (!task) throw new NotFoundException('Task not found');
-
-    const orgIds = await this.orgService.getOrgScope(user.organization.id);
-    if (!orgIds.includes(task.organization.id)) {
-      throw new ForbiddenException('Not allowed');
-    }
 
     await this.taskRepo.remove(task);
 

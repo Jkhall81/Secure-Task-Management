@@ -5,6 +5,7 @@ import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { ProfileComponent } from './pages/profile/profile.component';
 import { LoginComponent } from './features/auth/login/login.component';
 import { RegisterComponent } from './features/auth/register/register.component';
+import { AuthGuard } from './core/auth/auth.guard';
 
 export const appRoutes: Route[] = [
   {
@@ -12,8 +13,16 @@ export const appRoutes: Route[] = [
     component: LayoutComponent,
     children: [
       { path: '', component: LandingComponent },
-      { path: 'dashboard', component: DashboardComponent },
-      { path: 'profile', component: ProfileComponent },
+      {
+        path: 'dashboard',
+        component: DashboardComponent,
+        canActivate: [AuthGuard],
+      },
+      {
+        path: 'profile',
+        component: ProfileComponent,
+        canActivate: [AuthGuard],
+      },
       { path: 'login', component: LoginComponent },
       { path: 'register', component: RegisterComponent },
     ],
