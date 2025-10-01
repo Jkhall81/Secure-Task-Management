@@ -1,0 +1,80 @@
+<div
+  cdkDropList
+  [cdkDropListData]="tasks"
+  (cdkDropListDropped)="drop($event)"
+  class="space-y-3 min-h-[100px]"
+>
+  <div
+    *ngFor="let task of tasks; trackBy: trackByTaskId"
+    cdkDrag
+    class="group relative bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 cursor-move hover:border-gray-600 hover:scale-[1.02]"
+  >
+    <!-- Drag handle indicator (visible on hover) -->
+    <div
+      class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity"
+    >
+      <svg
+        class="w-4 h-4 text-gray-500"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M4 8h16M4 16h16"
+        ></path>
+      </svg>
+    </div>
+
+    <!-- Title -->
+    <h3
+      class="text-base font-semibold text-white pr-6 group-hover:text-gray-100 transition-colors line-clamp-2 leading-tight mb-2"
+    >
+      {{ task.title }}
+    </h3>
+
+    <!-- Description -->
+    <p
+      *ngIf="task.description"
+      class="text-sm text-gray-300 leading-relaxed mb-3 line-clamp-3 group-hover:text-gray-200 transition-colors"
+    >
+      {{ task.description }}
+    </p>
+
+    <!-- Empty state for description -->
+    <div
+      *ngIf="!task.description"
+      class="text-sm text-gray-500 italic mb-3 group-hover:text-gray-400 transition-colors"
+    >
+      No description provided
+    </div>
+
+    <!-- Status and metadata -->
+    <div
+      class="flex items-center justify-between pt-3 border-t border-gray-700/50"
+    >
+      <span
+        class="px-3 py-1.5 text-xs font-medium rounded-full border backdrop-blur-sm transition-all group-hover:scale-105"
+        [ngClass]="{
+          'bg-purple-500/10 text-purple-300 border-purple-500/30':
+            status === 'todo',
+          'bg-yellow-500/10 text-yellow-300 border-yellow-500/30':
+            status === 'in-progress',
+          'bg-green-500/10 text-green-300 border-green-500/30':
+            status === 'done'
+        }"
+      >
+        {{ status === 'in-progress' ? 'In Progress' : (status | titlecase) }}
+      </span>
+
+      <!-- Optional timestamp -->
+      <span
+        class="text-xs text-gray-500 group-hover:text-gray-400 transition-colors"
+      >
+        {{ task.createdAt | date : 'MMM d' }}
+      </span>
+    </div>
+  </div>
+</div>

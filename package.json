@@ -5,6 +5,7 @@
   "scripts": {},
   "private": true,
   "dependencies": {
+    "@angular/cdk": "^20.2.5",
     "@angular/common": "~20.3.0",
     "@angular/compiler": "~20.3.0",
     "@angular/core": "~20.3.0",
@@ -17,6 +18,7 @@
     "@nestjs/jwt": "^11.0.0",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.0",
+    "@nestjs/swagger": "^11.2.0",
     "@nestjs/typeorm": "^11.0.0",
     "@tailwindcss/postcss": "^4.1.13",
     "axios": "^1.6.0",
@@ -29,6 +31,7 @@
     "reflect-metadata": "^0.1.13",
     "rxjs": "~7.8.0",
     "sqlite3": "^5.1.7",
+    "swagger-ui-express": "^5.0.1",
     "tailwindcss": "^4.1.13",
     "typeorm": "^0.3.27",
     "zone.js": "~0.15.0"

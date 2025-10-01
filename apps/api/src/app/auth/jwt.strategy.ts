@@ -1,19 +1,34 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from '../entities/user.entity';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor() {
+  constructor(
+    @InjectRepository(User)
+    private userRepo: Repository<User>
+  ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET || 'supersecretkey', // 🔑 same as in AuthModule
+      secretOrKey: process.env.JWT_SECRET || 'supersecretkey',
     });
   }
 
-  async validate(payload: any) {
-    // Whatever you return here gets attached to req.user
-    return { userId: payload.sub, email: payload.email, role: payload.role };
+  async validate(payload: any): Promise<User> {
+    // Load full user with role + permissions + org
+    const user = await this.userRepo.findOne({
+      where: { id: payload.sub },
+      relations: ['role', 'role.permissions', 'organization'],
+    });
+
+    if (!user) {
+      return null;
+    }
+
+    return user; // this becomes req.user
   }
 }

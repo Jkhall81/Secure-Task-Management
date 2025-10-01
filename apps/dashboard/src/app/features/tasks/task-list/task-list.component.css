@@ -1,0 +1,27 @@
+/* Improved drag and drop performance */
+.cdk-drag-preview {
+  box-sizing: border-box;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  opacity: 0.9;
+  transform: rotate(2deg);
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.3;
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.cdk-drag-animating {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.cdk-drop-list-dragging .cdk-drag:not(.cdk-drag-placeholder) {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+/* Disable pointer events on drag preview for better performance */
+.cdk-drag-preview * {
+  pointer-events: none;
+}

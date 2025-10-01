@@ -1,6 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
+import { Subscription } from 'rxjs';
+import { AuthService } from '../../auth/auth.service';
 
 @Component({
   selector: 'app-navbar',
@@ -9,25 +11,23 @@ import { Router, RouterModule } from '@angular/router';
   styleUrls: ['./navbar.component.css'],
   imports: [CommonModule, RouterModule],
 })
-export class NavbarComponent {
-  isAuthenticated: boolean = false;
+export class NavbarComponent implements OnInit, OnDestroy {
+  isAuthenticated = false;
   isMobileMenuOpen = false;
+  private authSub!: Subscription;
 
-  constructor(private router: Router) {
-    // Check if there's a JWT token to verify authentication
-    const token = localStorage.getItem('jwt_token');
-    if (token) {
-      this.isAuthenticated = true;
-    }
+  constructor(private authService: AuthService, private router: Router) {}
+
+  ngOnInit() {
+    this.authSub = this.authService.authState$.subscribe(
+      (auth) => (this.isAuthenticated = auth)
+    );
   }
 
-  // Method to handle logout
   logout() {
-    localStorage.removeItem('jwt_token');
-    localStorage.removeItem('user_data');
-    this.isAuthenticated = false;
+    this.authService.logout(); // clears localStorage + emits false
+    this.router.navigate(['/']); // go back to home
     this.isMobileMenuOpen = false;
-    this.router.navigate(['/']);
   }
 
   toggleMobileMenu(): void {
@@ -36,5 +36,11 @@ export class NavbarComponent {
 
   closeMobileMenu(): void {
     this.isMobileMenuOpen = false;
+  }
+
+  ngOnDestroy() {
+    if (this.authSub) {
+      this.authSub.unsubscribe();
+    }
   }
 }

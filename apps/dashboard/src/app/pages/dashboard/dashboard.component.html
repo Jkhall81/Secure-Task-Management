@@ -1,0 +1,65 @@
+<div
+  class="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white"
+>
+  <div class="flex-1 max-w-7xl mx-auto w-full p-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+      <h1
+        class="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent"
+      >
+        Task Dashboard
+      </h1>
+      <div class="flex space-x-3">
+        <input
+          type="text"
+          placeholder="Search tasks..."
+          class="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm placeholder-gray-400 focus:ring-2 focus:ring-purple-500"
+        />
+        <button
+          (click)="toggleNewTask()"
+          class="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg hover:from-purple-700 hover:to-pink-700 transition shadow"
+        >
+          + New Task
+        </button>
+      </div>
+    </div>
+
+    <!-- New Task Form -->
+    <div *ngIf="showNewTask" class="mb-8">
+      <app-new-task
+        (taskCreated)="handleTaskCreated()"
+        (closed)="toggleNewTask()"
+      ></app-new-task>
+    </div>
+
+    <!-- Task Board -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1" cdkDropListGroup>
+      <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+        <h2 class="text-lg font-semibold mb-4">To Do</h2>
+        <app-task-list
+          [status]="'todo'"
+          [tasks]="todoTasks"
+          (taskDropped)="onTaskDropped($event, 'todo')"
+        ></app-task-list>
+      </div>
+
+      <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+        <h2 class="text-lg font-semibold mb-4">In Progress</h2>
+        <app-task-list
+          [status]="'in-progress'"
+          [tasks]="inProgressTasks"
+          (taskDropped)="onTaskDropped($event, 'in-progress')"
+        ></app-task-list>
+      </div>
+
+      <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+        <h2 class="text-lg font-semibold mb-4">Done</h2>
+        <app-task-list
+          [status]="'done'"
+          [tasks]="doneTasks"
+          (taskDropped)="onTaskDropped($event, 'done')"
+        ></app-task-list>
+      </div>
+    </div>
+  </div>
+</div>

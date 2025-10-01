@@ -23,6 +23,12 @@ export class OrganizationService {
     return this.orgRepo.save(org);
   }
 
+  async findPublicOrgs() {
+    return this.orgRepo.find({
+      select: ['id', 'name'], // only return safe fields
+    });
+  }
+
   async findAll() {
     return this.orgRepo.find({ relations: ['users'] });
   }

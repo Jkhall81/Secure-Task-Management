@@ -27,28 +27,35 @@ export class AuthService {
   async register(dto: RegisterDto): Promise<User> {
     const { email, password, roleName, orgId } = dto;
 
-    // Prevent duplicate users
     const existing = await this.usersRepo.findOne({ where: { email } });
-    if (existing) {
-      throw new BadRequestException('Email already exists');
-    }
+    if (existing) throw new BadRequestException('Email already exists');
 
-    // Hash password
     const hashed = await bcrypt.hash(password, 10);
 
-    // Ensure role exists
-    const role = await this.roleRepo.findOne({ where: { name: roleName } });
-    if (!role) {
-      throw new BadRequestException(`Role "${roleName}" not found`);
+    let org: Organization;
+
+    if (orgId) {
+      org = await this.orgRepo.findOne({ where: { id: orgId } });
+      if (!org)
+        throw new BadRequestException(
+          `Organization with id ${orgId} not found`
+        );
+    } else {
+      const name = dto.orgName || `${email}'s Organization`;
+      org = this.orgRepo.create({ name });
+      await this.orgRepo.save(org);
     }
 
-    // Ensure org exists
-    const org = await this.orgRepo.findOne({ where: { id: orgId } });
-    if (!org) {
-      throw new BadRequestException(`Organization with id ${orgId} not found`);
+    // If no roleName passed, default to 'owner' when creating org, else use provided
+    let role: Role;
+    if (!roleName && !orgId) {
+      role = await this.roleRepo.findOne({ where: { name: 'owner' } });
+    } else {
+      role = await this.roleRepo.findOne({ where: { name: roleName } });
     }
 
-    // Create user entity
+    if (!role) throw new BadRequestException(`Role "${roleName}" not found`);
+
     const user = this.usersRepo.create({
       email,
       password: hashed,

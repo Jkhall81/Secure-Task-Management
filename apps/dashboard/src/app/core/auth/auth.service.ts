@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, BehaviorSubject } from 'rxjs';
 import { tap } from 'rxjs/operators';
 
 @Injectable({
@@ -8,10 +8,16 @@ import { tap } from 'rxjs/operators';
 })
 export class AuthService {
   private apiUrl = 'http://localhost:3000/api/auth';
+  private tokenKey = 'jwt_token';
+  private userKey = 'user_data';
+
+  private authState = new BehaviorSubject<boolean>(this.isAuthenticated());
+  authState$ = this.authState.asObservable();
 
   constructor(private http: HttpClient) {}
 
-  // Login method
+  // ---- AUTH ACTIONS ----
+
   login(email: string, password: string): Observable<any> {
     return this.http
       .post<any>(`${this.apiUrl}/login`, { email, password })
@@ -19,68 +25,83 @@ export class AuthService {
         tap((response) => {
           if (response && response.access_token) {
             this.setToken(response.access_token);
-            // Also store user data if needed for UI
+
             if (response.user) {
-              localStorage.setItem('user_data', JSON.stringify(response.user));
+              localStorage.setItem(this.userKey, JSON.stringify(response.user));
             }
+
+            this.authState.next(true);
           }
         })
       );
   }
 
-  // Register method
   register(
     email: string,
     password: string,
     roleName: string,
-    orgId: string
+    orgId?: string | null,
+    orgName?: string | null
   ): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/register`, {
       email,
       password,
       roleName,
       orgId,
+      orgName,
     });
   }
 
-  // Store the JWT token
+  logout(): void {
+    localStorage.removeItem(this.tokenKey);
+    localStorage.removeItem(this.userKey);
+    this.authState.next(false);
+  }
+
+  // ---- TOKEN HANDLING ----
+
   setToken(token: string): void {
-    localStorage.setItem('jwt_token', token);
+    localStorage.setItem(this.tokenKey, token);
   }
 
-  // Get the JWT token
   getToken(): string | null {
-    return localStorage.getItem('jwt_token');
+    return localStorage.getItem(this.tokenKey);
   }
 
-  // Check if the user is authenticated (with expiration check)
   isAuthenticated(): boolean {
     const token = this.getToken();
     if (!token) return false;
 
-    return !this.isTokenExpired(token);
+    const expired = this.isTokenExpired(token);
+    if (expired) {
+      this.logout();
+      return false;
+    }
+    return true;
   }
 
-  // Token expiration check (same logic as guard)
   private isTokenExpired(token: string): boolean {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
-      const exp = payload.exp * 1000;
+      const exp = payload.exp * 1000; // ms
       return Date.now() >= exp;
     } catch {
-      return true;
+      return true; // invalid token
     }
   }
 
-  // Logout the user
-  logout(): void {
-    localStorage.removeItem('jwt_token');
-    localStorage.removeItem('user_data');
+  // ---- USER HELPERS ----
+
+  getUser(): any {
+    const userData = localStorage.getItem(this.userKey);
+    return userData ? JSON.parse(userData) : null;
   }
 
-  // Optional: Get user data for UI
-  getUser(): any {
-    const userData = localStorage.getItem('user_data');
-    return userData ? JSON.parse(userData) : null;
+  getUserId(): number | null {
+    return this.getUser()?.id ?? null;
+  }
+
+  getUserEmail(): string | null {
+    return this.getUser()?.email ?? null;
   }
 }
