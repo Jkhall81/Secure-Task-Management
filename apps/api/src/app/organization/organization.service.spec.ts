@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import { OrganizationService } from './organization.service';
 import { Organization } from '../entities/organization.entity';
 import { User } from '../entities/user.entity';
+import { Task } from '../entities/task.entity'; // Add this import
+import { AuditLog } from '../entities/audit-log.entity'; // Add this import
 
 const mockRepo = () => ({
   findOne: jest.fn(),
@@ -23,6 +25,8 @@ describe('OrganizationService', () => {
         OrganizationService,
         { provide: getRepositoryToken(Organization), useValue: mockRepo() },
         { provide: getRepositoryToken(User), useValue: mockRepo() },
+        { provide: getRepositoryToken(Task), useValue: mockRepo() }, // ADD THIS
+        { provide: getRepositoryToken(AuditLog), useValue: mockRepo() }, // ADD THIS
       ],
     }).compile();
 

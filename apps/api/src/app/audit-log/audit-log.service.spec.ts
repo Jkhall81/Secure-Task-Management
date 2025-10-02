@@ -4,8 +4,23 @@ import { Repository } from 'typeorm';
 import { AuditLogService } from './audit-log.service';
 import { AuditLog } from '../entities/audit-log.entity';
 import { User } from '../entities/user.entity';
-import { Organization } from '../entities/organization.entity';
 import { OrganizationService } from '../organization/organization.service';
+
+// Slick mock factory
+const createMockUser = (orgId: number) =>
+  ({
+    id: 1,
+    email: 'test@example.com',
+    password: 'hashed',
+    role: {
+      id: 1,
+      name: 'viewer',
+      permissions: [],
+      users: [],
+    },
+    organizations: [{ id: orgId, name: 'Test Org' }],
+    tasks: [],
+  } as unknown as User);
 
 // Utility: mock a TypeORM repo
 const mockRepo = () => ({
@@ -35,11 +50,7 @@ describe('AuditLogService', () => {
   });
 
   it('should log an action', async () => {
-    const user = {
-      id: 1,
-      email: 'test@example.com',
-      organization: { id: 1, name: 'Org1' },
-    } as User;
+    const user = createMockUser(1);
 
     const mockLog = { id: 123, action: 'CREATE_TASK' } as AuditLog;
     auditRepo.create.mockReturnValue(mockLog);
@@ -52,11 +63,11 @@ describe('AuditLogService', () => {
         action: 'CREATE_TASK',
         targetId: 42,
         user,
-        organization: user.organization,
+        organization: user.organizations[0], // Fix: use organizations[0] instead of organization
       })
     );
     expect(auditRepo.save).toHaveBeenCalledWith(mockLog);
-    expect(result).toBeUndefined(); // logAction doesn’t return anything
+    expect(result).toBeUndefined(); // logAction doesn't return anything
   });
 
   it('should find all logs in org scope', async () => {

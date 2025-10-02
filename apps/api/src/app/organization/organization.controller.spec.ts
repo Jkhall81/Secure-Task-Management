@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { OrganizationController } from './organization.controller';
 import { OrganizationService } from './organization.service';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
+import { RoleHierarchyService } from '../../../../../libs/auth/src/lib/role-hierarchy.service';
 
 describe('OrganizationController', () => {
   let controller: OrganizationController;
@@ -13,10 +14,22 @@ describe('OrganizationController', () => {
     addUserToOrg: jest.fn(),
   };
 
+  const mockRoleHierarchyService = {
+    isValidRole: jest.fn().mockReturnValue(true),
+    hasRoleAccess: jest.fn().mockReturnValue(true),
+  };
+
+  // Mock user and request
+  const mockUser = { id: 1, email: 'test@example.com' };
+  const mockReq = { user: mockUser };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [OrganizationController],
-      providers: [{ provide: OrganizationService, useValue: mockOrgService }],
+      providers: [
+        { provide: OrganizationService, useValue: mockOrgService },
+        { provide: RoleHierarchyService, useValue: mockRoleHierarchyService },
+      ],
     }).compile();
 
     controller = module.get<OrganizationController>(OrganizationController);
@@ -28,15 +41,21 @@ describe('OrganizationController', () => {
   });
 
   describe('create', () => {
-    it('should call OrganizationService.create with dto data', async () => {
+    it('should call OrganizationService.create with dto data and user', async () => {
       const dto: CreateOrganizationDto = { name: 'Org1', parentId: 5 };
       const mockResult = { id: 1, name: dto.name };
 
       (service.create as jest.Mock).mockResolvedValue(mockResult);
 
-      const result = await controller.create(dto);
+      // Add the mockReq as second parameter
+      const result = await controller.create(dto, mockReq);
 
-      expect(service.create).toHaveBeenCalledWith(dto.name, dto.parentId);
+      // Update the expected call to include the user
+      expect(service.create).toHaveBeenCalledWith(
+        dto.name,
+        dto.parentId,
+        mockUser
+      );
       expect(result).toEqual(mockResult);
     });
   });

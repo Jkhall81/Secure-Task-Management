@@ -42,7 +42,8 @@ export class TasksService {
       status: body.status || 'pending',
       category: body.category || 'work',
       organization: org,
-      owner: user,
+      createdBy: user, // Changed from 'owner' to 'createdBy'
+      createdById: user.id, // Add this line
     });
 
     console.log('Task entity created:', task);
@@ -63,20 +64,54 @@ export class TasksService {
     }
   }
 
-  async findAll(user: User, orgId?: number) {
-    // Use specific orgId if provided, otherwise user's current org
-    const targetOrgId = orgId || user.organizations?.[0]?.id;
+  async findAll(user: User, orgId?: number): Promise<Task[]> {
+    const query = this.taskRepo
+      .createQueryBuilder('task')
+      .leftJoinAndSelect('task.organization', 'organization')
+      .leftJoinAndSelect('organization.parent', 'parent') // ← ADD THIS LINE
+      .leftJoinAndSelect('task.createdBy', 'createdBy');
 
-    return this.taskRepo.find({
-      where: { organization: { id: targetOrgId } },
-      relations: ['owner', 'organization'],
-    });
+    // Get userOrgIds once at the start
+    const userOrgIds = user.organizations.map((org) => org.id);
+
+    // Apply role-based scoping
+    switch (user.role.name) {
+      case 'owner':
+        // Owners can see all tasks in their org hierarchy
+        if (orgId) {
+          const orgScope = await this.orgService.getOrgScope(orgId);
+          query.andWhere('task.organizationId IN (:...orgScope)', { orgScope });
+        } else {
+          // If no org specified, show tasks from all user's organizations
+          query.andWhere('task.organizationId IN (:...userOrgIds)', {
+            userOrgIds,
+          });
+        }
+        break;
+
+      case 'admin':
+        // Admins can see all tasks in their specific orgs
+        query.andWhere('task.organizationId IN (:...userOrgIds)', {
+          userOrgIds,
+        });
+        break;
+
+      case 'viewer':
+        // Viewers can only see their own tasks
+        query.andWhere('task.createdById = :userId', { userId: user.id });
+        query.andWhere('task.organizationId IN (:...userOrgIds)', {
+          userOrgIds,
+        });
+        break;
+    }
+
+    return query.getMany();
   }
 
   async update(id: number, body: any, user: User) {
     const task = await this.taskRepo.findOne({
       where: { id },
-      relations: ['owner', 'organization'],
+      relations: ['createdBy', 'organization'], // Changed from 'owner' to 'createdBy'
     });
     if (!task) throw new NotFoundException('Task not found');
 
@@ -92,7 +127,7 @@ export class TasksService {
   async remove(id: number, user: User) {
     const task = await this.taskRepo.findOne({
       where: { id },
-      relations: ['owner', 'organization'],
+      relations: ['createdBy', 'organization'], // Changed from 'owner' to 'createdBy'
     });
     if (!task) throw new NotFoundException('Task not found');
 

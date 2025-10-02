@@ -1,13 +1,15 @@
 <div
   class="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white"
 >
-  <!-- Header with Organization -->
+  <!-- Enhanced Header with Filters -->
   <header class="border-b border-gray-700 bg-gray-800/50 backdrop-blur-sm">
     <div class="container mx-auto px-4 py-4">
-      <div class="flex items-center justify-between">
-        <div>
+      <div
+        class="flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+      >
+        <!-- Title and Organization -->
+        <div class="flex-1">
           <h1 class="text-2xl font-bold">Task Dashboard</h1>
-          <!-- Current Organization Display -->
           <div class="flex items-center gap-2 mt-1">
             <span class="text-sm text-gray-400">Organization:</span>
             <span
@@ -22,13 +24,18 @@
           </div>
         </div>
 
-        <div class="flex items-center gap-4">
+        <!-- Filters and Controls -->
+        <div
+          class="flex flex-col sm:flex-row gap-3 items-start sm:items-center"
+        >
           <!-- Search -->
           <div class="relative">
             <input
               type="text"
               placeholder="Search tasks..."
-              class="bg-gray-700 border border-gray-600 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-purple-500 w-64"
+              [value]="searchQuery"
+              (input)="onSearchChange($any($event.target).value)"
+              class="bg-gray-700 border border-gray-600 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-purple-500 w-full sm:w-64"
             />
             <svg
               class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"
@@ -45,34 +52,86 @@
             </svg>
           </div>
 
-          <!-- New Task Button -->
-          <button
-            (click)="toggleNewTask()"
-            class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors font-medium"
+          <!-- Category Filter -->
+          <select
+            [value]="selectedCategory"
+            (change)="onCategoryChange($any($event.target).value)"
+            class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-500"
           >
-            + New Task
+            <option value="all">All Categories</option>
+            <option *ngFor="let category of categories" [value]="category">
+              {{ category | titlecase }}
+            </option>
+          </select>
+
+          <!-- Sort Dropdown -->
+          <div class="relative">
+            <select
+              (change)="onSortChange($any($event.target).value)"
+              class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-500 appearance-none pr-8"
+            >
+              <option value="createdAt" [selected]="sortBy === 'createdAt'">
+                Sort by: {{ sortDirection === 'asc' ? 'Oldest' : 'Newest' }}
+              </option>
+              <option value="title" [selected]="sortBy === 'title'">
+                Sort by: Title {{ sortDirection === 'asc' ? 'A-Z' : 'Z-A' }}
+              </option>
+            </select>
+            <div class="absolute right-2 top-3 pointer-events-none">
+              <svg
+                class="w-4 h-4 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 9l-7 7-7-7"
+                ></path>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Reset Filters -->
+          <button
+            (click)="resetFilters()"
+            class="text-gray-400 hover:text-white text-sm px-3 py-2 border border-gray-600 rounded-lg hover:border-gray-500 transition-colors"
+            title="Reset all filters"
+          >
+            Reset
           </button>
 
-          <!-- Organization Menu Trigger -->
-          <button
-            (click)="toggleOrgSidebar()"
-            class="p-2 hover:bg-gray-700 rounded-lg transition-colors border border-gray-600"
-            title="Manage Organizations"
-          >
-            <svg
-              class="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          <!-- Action Buttons -->
+          <div class="flex gap-2">
+            <button
+              (click)="toggleNewTask()"
+              class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors font-medium whitespace-nowrap"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-              ></path>
-            </svg>
-          </button>
+              + New Task
+            </button>
+
+            <button
+              (click)="toggleOrgSidebar()"
+              class="p-2 hover:bg-gray-700 rounded-lg transition-colors border border-gray-600"
+              title="Manage Organizations"
+            >
+              <svg
+                class="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                ></path>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -90,6 +149,7 @@
         [organizations]="organizations"
         (orgSelected)="onOrgSelected($event)"
         (orgCreated)="onOrgCreated($event)"
+        (orgDeleted)="onOrgDeleted($event)"
         (sidebarClosed)="orgSidebarOpen = false"
       ></app-org-sidebar>
     </div>
@@ -108,7 +168,7 @@
         <!-- Task Board with CdkDropListGroup -->
         <div
           cdkDropListGroup
-          class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6"
+          class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 mt-6"
         >
           <!-- Todo Column -->
           <div class="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
@@ -128,6 +188,8 @@
             <app-task-list
               status="todo"
               [tasks]="todoTasks"
+              [searchQuery]="searchQuery"
+              [selectedCategory]="selectedCategory"
               (taskDropped)="onTaskDropped($event, 'todo')"
               (taskUpdated)="onTaskUpdated($event)"
               (taskDeleted)="onTaskDeleted($event)"
@@ -152,6 +214,8 @@
             <app-task-list
               status="in-progress"
               [tasks]="inProgressTasks"
+              [searchQuery]="searchQuery"
+              [selectedCategory]="selectedCategory"
               (taskDropped)="onTaskDropped($event, 'in-progress')"
               (taskUpdated)="onTaskUpdated($event)"
               (taskDeleted)="onTaskDeleted($event)"
@@ -176,6 +240,8 @@
             <app-task-list
               status="done"
               [tasks]="doneTasks"
+              [searchQuery]="searchQuery"
+              [selectedCategory]="selectedCategory"
               (taskDropped)="onTaskDropped($event, 'done')"
               (taskUpdated)="onTaskUpdated($event)"
               (taskDeleted)="onTaskDeleted($event)"

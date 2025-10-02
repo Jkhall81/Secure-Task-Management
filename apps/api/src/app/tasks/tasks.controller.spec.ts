@@ -52,7 +52,7 @@ describe('TasksController', () => {
 
       const result = await controller.findAll({ user });
 
-      expect(service.findAll).toHaveBeenCalledWith(user);
+      expect(service.findAll).toHaveBeenCalledWith(user, undefined);
       expect(result).toEqual(mockResult);
     });
   });

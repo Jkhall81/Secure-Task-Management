@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { User } from './user.entity';
 import { Organization } from './organization.entity';
 
@@ -25,9 +31,17 @@ export class Task {
   })
   category: string;
 
-  @ManyToOne(() => User, (user) => user.id)
-  owner: User;
+  @ManyToOne(() => User, (user) => user.tasks)
+  @JoinColumn({ name: 'createdById' })
+  createdBy: User;
+
+  @Column()
+  createdById: number;
 
   @ManyToOne(() => Organization, (org) => org.tasks)
+  @JoinColumn({ name: 'organizationId' })
   organization: Organization;
+
+  @Column()
+  organizationId: number;
 }

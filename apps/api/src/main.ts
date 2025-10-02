@@ -9,7 +9,7 @@ import { AppModule } from './app/app.module';
 import { DataSource } from 'typeorm';
 import { ValidationPipe } from '@nestjs/common';
 import { seedRolesAndPermissions } from './app/seeds/role-permission.seed';
-import { seedOrganizations } from './app/seeds/organization.seed';
+// import { seedOrganizations } from './app/seeds/organization.seed';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
@@ -33,7 +33,7 @@ async function bootstrap() {
   const dataSource = app.get(DataSource);
 
   await seedRolesAndPermissions(dataSource);
-  await seedOrganizations(dataSource);
+  // await seedOrganizations(dataSource);
 
   // Swagger Config
   const config = new DocumentBuilder()

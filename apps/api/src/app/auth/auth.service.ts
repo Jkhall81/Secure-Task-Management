@@ -12,6 +12,7 @@ import { Organization } from '../entities/organization.entity';
 import * as bcrypt from 'bcrypt';
 import { RegisterDto } from './dto/register.dto';
 import { JwtService } from '@nestjs/jwt';
+import { OrganizationService } from '../organization/organization.service';
 
 @Injectable()
 export class AuthService {
@@ -22,11 +23,12 @@ export class AuthService {
     private roleRepo: Repository<Role>,
     @InjectRepository(Organization)
     private orgRepo: Repository<Organization>,
-    private jwtService: JwtService
+    private jwtService: JwtService,
+    private organizationService: OrganizationService
   ) {}
 
   async register(dto: RegisterDto): Promise<User> {
-    const { email, password, roleName, orgId } = dto;
+    const { email, password, roleName, orgId, orgName } = dto;
 
     const existing = await this.usersRepo.findOne({ where: { email } });
     if (existing) throw new BadRequestException('Email already exists');
@@ -38,7 +40,7 @@ export class AuthService {
     if (!roleName && !orgId) {
       role = await this.roleRepo.findOne({ where: { name: 'owner' } });
     } else if (!roleName && orgId) {
-      role = await this.roleRepo.findOne({ where: { name: 'user' } });
+      role = await this.roleRepo.findOne({ where: { name: 'user' } }); // or 'viewer'
     } else {
       role = await this.roleRepo.findOne({ where: { name: roleName } });
     }
@@ -53,6 +55,7 @@ export class AuthService {
     });
 
     const savedUser = await this.usersRepo.save(user);
+    console.log('User saved with ID:', savedUser.id);
 
     let organization: Organization;
 
@@ -67,19 +70,30 @@ export class AuthService {
           `Organization with id ${orgId} not found`
         );
       }
+
+      console.log(
+        'Adding user to existing org - User ID:',
+        savedUser.id,
+        'Org ID:',
+        organization.id
+      );
+
+      // Use the organization service to add user
+      await this.organizationService.addUserToOrg(
+        savedUser.id,
+        organization.id
+      );
     } else {
       // User is creating a new organization
-      const name = dto.orgName || `${email}'s Organization`;
-      organization = this.orgRepo.create({ name });
-      await this.orgRepo.save(organization);
-    }
+      const name = orgName || `${email}'s Organization`;
+      console.log('Creating new organization for user ID:', savedUser.id);
 
-    // Explicitly add user to organization using relation
-    await this.orgRepo
-      .createQueryBuilder()
-      .relation(Organization, 'users')
-      .of(organization.id)
-      .add(savedUser.id);
+      organization = await this.organizationService.create(
+        name,
+        null,
+        savedUser
+      );
+    }
 
     // Reload user with organizations to return complete data
     const userWithOrgs = await this.usersRepo.findOne({
@@ -89,9 +103,8 @@ export class AuthService {
 
     console.log(
       'User registered with organizations:',
-      userWithOrgs.organizations
+      userWithOrgs?.organizations?.map((org) => org.id)
     );
-
     return userWithOrgs;
   }
 

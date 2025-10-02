@@ -27,8 +27,9 @@ export class OrganizationService {
   async create(name: string, parentId?: number, creatingUser?: User) {
     console.log('=== CREATING ORGANIZATION ===');
     console.log('Name:', name);
-    console.log('Creating user:', creatingUser?.id, creatingUser?.email);
+    console.log('Creating user ID:', creatingUser?.id);
 
+    // Create organization using TypeORM (this part works fine)
     const org = this.orgRepo.create({ name });
 
     if (parentId) {
@@ -37,27 +38,24 @@ export class OrganizationService {
       org.parent = parent;
     }
 
-    // Associate the creating user with the organization
-    if (creatingUser) {
-      org.users = [creatingUser];
-      console.log(
-        'Set users on org:',
-        org.users.map((u) => ({ id: u.id, email: u.email }))
-      );
-    }
-
     const savedOrg = await this.orgRepo.save(org);
     console.log('Organization saved with ID:', savedOrg.id);
 
-    // Verify the relationship was created
-    const orgWithUsers = await this.orgRepo.findOne({
-      where: { id: savedOrg.id },
-      relations: ['users'],
-    });
-    console.log(
-      'Organization after save - users:',
-      orgWithUsers?.users?.map((u) => u.id)
-    );
+    // MANUALLY handle the junction table - this is the key fix
+    if (creatingUser) {
+      console.log(
+        'Manually creating junction for user:',
+        creatingUser.id,
+        'org:',
+        savedOrg.id
+      );
+
+      await this.orgRepo.manager.query(
+        `INSERT INTO user_organizations_organization (userId, organizationId) VALUES (?, ?)`,
+        [creatingUser.id, savedOrg.id]
+      );
+      console.log('Junction table entry created successfully');
+    }
 
     return savedOrg;
   }
@@ -77,29 +75,28 @@ export class OrganizationService {
   }
 
   async addUserToOrg(userId: number, orgId: number) {
-    const user = await this.userRepo.findOne({
-      where: { id: userId },
-      relations: ['organizations'], // Need to load organizations
-    });
-    if (!user) throw new NotFoundException('User not found');
+    console.log(`Adding user ${userId} to organization ${orgId}`);
 
-    const org = await this.orgRepo.findOne({ where: { id: orgId } });
-    if (!org) throw new NotFoundException('Organization not found');
-
-    // FIX: Properly handle the organizations array
-    if (!user.organizations) {
-      user.organizations = [org];
-    } else {
-      // Check if user is already in this org
-      const alreadyInOrg = user.organizations.some(
-        (userOrg) => userOrg.id === orgId
+    // Use raw SQL to avoid any TypeORM relationship issues
+    try {
+      await this.orgRepo.manager.query(
+        `INSERT OR IGNORE INTO user_organizations_organization (userId, organizationId) VALUES (?, ?)`,
+        [userId, orgId]
       );
-      if (!alreadyInOrg) {
-        user.organizations.push(org);
-      }
+      console.log(`Successfully added user ${userId} to organization ${orgId}`);
+    } catch (error) {
+      console.error(
+        `Failed to add user ${userId} to organization ${orgId}:`,
+        error
+      );
+      throw error;
     }
 
-    return this.userRepo.save(user);
+    // Return the updated user
+    return await this.userRepo.findOne({
+      where: { id: userId },
+      relations: ['organizations'],
+    });
   }
 
   async getOrgScope(orgId: number): Promise<number[]> {
@@ -109,8 +106,25 @@ export class OrganizationService {
     });
     if (!org) throw new NotFoundException('Organization not found');
 
-    // include parent org + its children
-    return [org.id, ...org.children.map((c) => c.id)];
+    // Recursively get all child org IDs
+    const getAllChildIds = async (parentId: number): Promise<number[]> => {
+      const children = await this.orgRepo.find({
+        where: { parent: { id: parentId } },
+        relations: ['children'],
+      });
+
+      let childIds = children.map((child) => child.id);
+
+      for (const child of children) {
+        const grandChildren = await getAllChildIds(child.id);
+        childIds = [...childIds, ...grandChildren];
+      }
+
+      return childIds;
+    };
+
+    const childIds = await getAllChildIds(orgId);
+    return [orgId, ...childIds];
   }
 
   async remove(orgId: number, user: User) {

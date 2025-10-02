@@ -1,22 +1,23 @@
-import { DataSource } from 'typeorm';
-import { Organization } from '../entities/organization.entity';
+// import { DataSource } from 'typeorm';
+// import { Organization } from '../entities/organization.entity';
 
-export async function seedOrganizations(dataSource: DataSource) {
-  const orgRepo = dataSource.getRepository(Organization);
+// export async function seedOrganizations(dataSource: DataSource) {
+//   const orgRepo = dataSource.getRepository(Organization);
 
-  // Check if an organization with id 1 exists
-  const existingOrg = await orgRepo.findOne({ where: { id: 1 } });
-  if (existingOrg) {
-    console.log('Organization already exists!');
-    return;
-  }
+//   // Check if ANY organizations exist
+//   const existingOrgs = await orgRepo.find();
 
-  // Create a new organization
-  const org = orgRepo.create({
-    name: 'Example Organization',
-    // Optionally, you can add a parentId or other fields
-  });
+//   // Only seed if NO organizations exist at all
+//   if (existingOrgs.length > 0) {
+//     console.log('Organizations already exist, skipping seed.');
+//     return;
+//   }
 
-  await orgRepo.save(org);
-  console.log('Organization seeded:', org);
-}
+//   // Create example organization
+//   const org = orgRepo.create({
+//     name: 'Example Organization',
+//   });
+
+//   await orgRepo.save(org);
+//   console.log('Example organization seeded:', org);
+// }

@@ -23,6 +23,7 @@ import {
   ApiBearerAuth,
   ApiResponse,
 } from '@nestjs/swagger';
+import { Roles } from '../auth/roles.decorator';
 
 @ApiTags('tasks')
 @ApiBearerAuth() // all routes need JWT
@@ -35,6 +36,34 @@ export class TasksController {
   @Permissions('CREATE_TASK')
   create(@Body() dto: CreateTaskDto, @Req() req: any) {
     return this.tasksService.create(dto, req.user);
+  }
+
+  @Get('test-inheritance')
+  @Roles('viewer') // Only requires viewer role
+  @ApiOperation({
+    summary: 'Test role inheritance',
+    description:
+      'Endpoint to verify that role inheritance is working correctly. Should be accessible to viewer, admin, and owner roles.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Inheritance test successful',
+    schema: {
+      example: {
+        message: 'If you can see this, inheritance is working!',
+        accessibleTo: ['viewer', 'admin', 'owner'],
+      },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - user does not have required role',
+  })
+  testInheritance() {
+    return {
+      message: 'If you can see this, inheritance is working!',
+      accessibleTo: ['viewer', 'admin', 'owner'],
+    };
   }
 
   @Get()

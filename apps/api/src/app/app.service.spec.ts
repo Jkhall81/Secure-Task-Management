@@ -14,7 +14,11 @@ describe('AppService', () => {
 
   describe('getData', () => {
     it('should return "Hello API"', () => {
-      expect(service.getData()).toEqual({ message: 'Hello API' });
+      expect(service.getData()).toEqual({
+        status: 'ok',
+        timestamp: expect.any(String),
+        uptime: expect.any(Number),
+      });
     });
   });
 });

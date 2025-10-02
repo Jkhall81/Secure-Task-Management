@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuditLogController } from './audit-log.controller';
 import { AuditLogService } from './audit-log.service';
+import { RoleHierarchyService } from '../../../../../libs/auth/src/lib/role-hierarchy.service';
 
 describe('AuditLogController', () => {
   let controller: AuditLogController;
@@ -11,10 +12,18 @@ describe('AuditLogController', () => {
     findByUserInOrg: jest.fn(),
   };
 
+  const mockRoleHierarchyService = {
+    isValidRole: jest.fn().mockReturnValue(true),
+    hasRoleAccess: jest.fn().mockReturnValue(true),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuditLogController],
-      providers: [{ provide: AuditLogService, useValue: mockAuditLogService }],
+      providers: [
+        { provide: AuditLogService, useValue: mockAuditLogService },
+        { provide: RoleHierarchyService, useValue: mockRoleHierarchyService },
+      ],
     }).compile();
 
     controller = module.get<AuditLogController>(AuditLogController);

@@ -6,6 +6,7 @@ import {
   OneToMany,
   ManyToOne,
   ManyToMany,
+  JoinTable,
 } from 'typeorm';
 import { User } from './user.entity';
 import { Task } from './task.entity';
@@ -25,6 +26,9 @@ export class Organization {
   children: Organization[];
 
   @ManyToMany(() => User, (user) => user.organizations)
+  @JoinTable({
+    name: 'user_organizations_organization',
+  })
   users: User[];
 
   @OneToMany(() => Task, (task) => task.organization)

@@ -5,9 +5,11 @@ import {
   ManyToOne,
   ManyToMany,
   JoinTable,
+  OneToMany,
 } from 'typeorm';
 import { Organization } from './organization.entity';
 import { Role } from './role.entity';
+import { Task } from './task.entity';
 
 @Entity()
 export class User {
@@ -26,4 +28,7 @@ export class User {
   @ManyToMany(() => Organization, (org) => org.users)
   @JoinTable()
   organizations: Organization[];
+
+  @OneToMany(() => Task, (task) => task.createdBy)
+  tasks: Task[];
 }

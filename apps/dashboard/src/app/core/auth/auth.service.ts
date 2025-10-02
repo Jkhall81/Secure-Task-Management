@@ -43,13 +43,22 @@ export class AuthService {
     orgId?: string | null,
     orgName?: string | null
   ): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/register`, {
+    const registerData: any = {
       email,
       password,
-      roleName,
-      orgId,
-      orgName,
+      roleName: roleName || undefined,
+      orgId: orgId ? Number(orgId) : undefined,
+      orgName: orgName || undefined,
+    };
+
+    // Remove undefined values
+    Object.keys(registerData).forEach((key) => {
+      if (registerData[key] === undefined) {
+        delete registerData[key];
+      }
     });
+
+    return this.http.post<any>(`${this.apiUrl}/register`, registerData);
   }
 
   logout(): void {

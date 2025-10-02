@@ -1,4 +1,10 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  OnChanges,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Task } from '../../../core/models/task.model';
@@ -19,12 +25,14 @@ import { ConfirmationModalComponent } from './confirmation-modal.component';
   templateUrl: './task-list.component.html',
   styleUrls: ['./task-list.component.css'],
 })
-export class TaskListComponent {
+export class TaskListComponent implements OnChanges {
   @Input() status!: string; // column name ("todo", "in-progress", "done")
   @Input() tasks: Task[] = []; // tasks come from Dashboard
   @Output() taskDropped = new EventEmitter<CdkDragDrop<Task[]>>();
   @Output() taskUpdated = new EventEmitter<Task>(); // to notify parent
   @Output() taskDeleted = new EventEmitter<number>();
+  @Input() searchQuery: string = '';
+  @Input() selectedCategory: string = 'all';
 
   private originalTaskState: { [key: number]: Partial<Task> } = {};
 
@@ -32,6 +40,24 @@ export class TaskListComponent {
 
   trackByTaskId(index: number, task: Task): string | number {
     return task.id;
+  }
+
+  get filteredTasks(): Task[] {
+    return this.tasks.filter((task) => {
+      const searchLower = this.searchQuery.toLowerCase();
+      const titleMatch =
+        task.title?.toLowerCase().includes(searchLower) ?? false;
+      const descriptionMatch =
+        task.description?.toLowerCase().includes(searchLower) ?? false;
+
+      const matchesSearch =
+        this.searchQuery === '' || titleMatch || descriptionMatch;
+      const matchesCategory =
+        this.selectedCategory === 'all' ||
+        task.category === this.selectedCategory;
+
+      return matchesSearch && matchesCategory;
+    });
   }
 
   // Forward the drop event up to the Dashboard
@@ -61,6 +87,17 @@ export class TaskListComponent {
     console.log('Deletion cancelled');
     this.showDeleteModal = false;
     this.taskToDelete = null;
+  }
+
+  getParentOrgName(task: any): string {
+    return task.organization?.parent?.name || 'Parent Organization';
+  }
+
+  getChildOrgTooltip(task: any): string {
+    if (task.organization?.parent) {
+      return `From: ${this.getParentOrgName(task)} → ${task.organization.name}`;
+    }
+    return '';
   }
 
   enableEditing(task: Task): void {
@@ -120,5 +157,17 @@ export class TaskListComponent {
     }
 
     task.editing = false;
+  }
+
+  // In your TaskListComponent, add this:
+  ngOnChanges() {
+    console.log('Tasks received in task-list:', this.tasks);
+    if (this.tasks.length > 0) {
+      this.tasks.forEach((task, index) => {
+        console.log(`Task ${index}:`, task.title);
+        console.log('  Organization:', task.organization);
+        console.log('  Has parent org?:', task.organization?.parent);
+      });
+    }
   }
 }

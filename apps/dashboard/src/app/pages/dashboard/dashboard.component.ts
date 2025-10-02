@@ -159,6 +159,18 @@ export class DashboardComponent implements OnInit {
     this.orgSidebarOpen = !this.orgSidebarOpen;
   }
 
+  onOrgDeleted(deletedOrgId: number) {
+    // Remove the deleted org from the local array
+    this.organizations = this.organizations.filter(
+      (org) => org.id !== deletedOrgId
+    );
+
+    // If the deleted org was the current org, clear it
+    if (this.currentOrg?.id === deletedOrgId) {
+      this.currentOrg = null;
+    }
+  }
+
   /** Handle organization selection */
   onOrgSelected(org: Organization) {
     this.currentOrg = org;
@@ -183,6 +195,118 @@ export class DashboardComponent implements OnInit {
         this.loadTasks();
       },
     });
+  }
+
+  // Add these properties to your DashboardComponent class
+
+  // Sorting and filtering
+  sortBy: 'title' | 'createdAt' | 'priority' = 'createdAt';
+  sortDirection: 'asc' | 'desc' = 'desc';
+  searchQuery: string = '';
+  selectedCategory: string = 'all';
+
+  // Available categories (you can make this dynamic from your tasks)
+  categories: string[] = ['all', 'work', 'personal', 'urgent', 'meeting'];
+
+  // Priority options
+  priorities = [
+    { value: 'all', label: 'All Priorities' },
+    { value: 'low', label: 'Low' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'high', label: 'High' },
+  ];
+  selectedPriority: string = 'all';
+
+  // Add this method to filter and sort tasks
+  getFilteredAndSortedTasks(tasks: Task[]): Task[] {
+    let filtered = tasks.filter((task) => {
+      // Search filter - handle optional description
+      const searchLower = this.searchQuery.toLowerCase();
+      const titleMatch =
+        task.title?.toLowerCase().includes(searchLower) ?? false;
+      const descriptionMatch = task.description
+        ? task.description.toLowerCase().includes(searchLower)
+        : false;
+
+      const matchesSearch =
+        this.searchQuery === '' || titleMatch || descriptionMatch;
+
+      // Category filter
+      const matchesCategory =
+        this.selectedCategory === 'all' ||
+        task.category === this.selectedCategory;
+
+      return matchesSearch && matchesCategory;
+    });
+
+    // Sorting with safe field access
+    filtered.sort((a, b) => {
+      let aValue: any, bValue: any;
+
+      switch (this.sortBy) {
+        case 'title':
+          aValue = a.title?.toLowerCase() ?? '';
+          bValue = b.title?.toLowerCase() ?? '';
+          break;
+        case 'createdAt':
+          // Handle optional createdAt dates safely
+          aValue = a.createdAt ? new Date(a.createdAt) : new Date(0);
+          bValue = b.createdAt ? new Date(b.createdAt) : new Date(0);
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return this.sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return this.sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return filtered;
+  }
+
+  // Getter methods for filtered tasks
+  get filteredTodoTasks(): Task[] {
+    return this.getFilteredAndSortedTasks(this.todoTasks);
+  }
+
+  get filteredInProgressTasks(): Task[] {
+    return this.getFilteredAndSortedTasks(this.inProgressTasks);
+  }
+
+  get filteredDoneTasks(): Task[] {
+    return this.getFilteredAndSortedTasks(this.doneTasks);
+  }
+
+  // Helper methods
+  onSortChange(sortBy: 'title' | 'createdAt' | 'priority') {
+    if (this.sortBy === sortBy) {
+      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortBy = sortBy;
+      this.sortDirection = 'desc';
+    }
+  }
+
+  onSearchChange(query: string) {
+    this.searchQuery = query;
+  }
+
+  onCategoryChange(category: string) {
+    this.selectedCategory = category;
+  }
+
+  onPriorityChange(priority: string) {
+    this.selectedPriority = priority;
+  }
+
+  // Reset all filters
+  resetFilters() {
+    this.searchQuery = '';
+    this.selectedCategory = 'all';
+    this.selectedPriority = 'all';
+    this.sortBy = 'createdAt';
+    this.sortDirection = 'desc';
   }
 
   /** Handle drag & drop between lists */
