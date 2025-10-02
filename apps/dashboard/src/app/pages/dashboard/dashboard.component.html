@@ -64,8 +64,8 @@
             </option>
           </select>
 
-          <!-- Sort Dropdown -->
-          <div class="relative">
+          <!-- We have enough sorting as is -->
+          <!-- <div class="relative">
             <select
               (change)="onSortChange($any($event.target).value)"
               class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-500 appearance-none pr-8"
@@ -92,7 +92,7 @@
                 ></path>
               </svg>
             </div>
-          </div>
+          </div> -->
 
           <!-- Reset Filters -->
           <button
@@ -101,6 +101,30 @@
             title="Reset all filters"
           >
             Reset
+          </button>
+
+          <!-- chart button -->
+          <button
+            (click)="toggleVisualizations()"
+            class="flex items-center gap-2 text-gray-400 hover:text-white text-sm px-3 py-2 border border-gray-600 rounded-lg hover:border-gray-500 transition-colors"
+            [class.text-purple-400]="showVisualizations"
+            [class.border-purple-500]="showVisualizations"
+            title="Toggle analytics view"
+          >
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+              />
+            </svg>
+            Analytics
           </button>
 
           <!-- Action Buttons -->
@@ -247,6 +271,14 @@
               (taskDeleted)="onTaskDeleted($event)"
             ></app-task-list>
           </div>
+        </div>
+      </div>
+      <!-- ANALYTICS COMPONENT -->
+      <div *ngIf="showVisualizations" class="mt-12">
+        <div class="container mx-auto px-4 lg:px-6">
+          <app-task-analytics
+            [tasks]="allTasksForAnalytics"
+          ></app-task-analytics>
         </div>
       </div>
     </div>

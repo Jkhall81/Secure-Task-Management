@@ -9,6 +9,7 @@ import {
 import { TaskListComponent } from '../../features/tasks/task-list/task-list.component';
 import { NewTaskComponent } from '../../features/tasks/new-task/new-task.component';
 import { OrgSidebarComponent } from '../../features/organizations/org-sidebar.component';
+import { TaskAnalyticsComponent } from './task-analytics.component';
 import { Task } from '../../core/models/task.model';
 import { Organization } from '../../core/models/org.model';
 import { TaskService } from '../../core/services/task.service';
@@ -25,6 +26,7 @@ import { CdkDropListGroup } from '@angular/cdk/drag-drop';
     NewTaskComponent,
     OrgSidebarComponent,
     CdkDropListGroup,
+    TaskAnalyticsComponent,
   ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css'],
@@ -42,6 +44,8 @@ export class DashboardComponent implements OnInit {
 
   showNewTask = false;
   refreshTrigger = 0;
+  showVisualizations = false;
+  private dataVersion = 0;
 
   constructor(
     private taskService: TaskService,
@@ -101,7 +105,6 @@ export class DashboardComponent implements OnInit {
     const orgId = this.currentOrg?.id;
 
     this.taskService.getTasks(orgId).subscribe({
-      // ← ADD orgId HERE
       next: (tasks) => {
         console.log('ALL TASKS FROM API:', tasks);
 
@@ -111,35 +114,30 @@ export class DashboardComponent implements OnInit {
         // Debug each status filter
         this.todoTasks = filteredTasks.filter((t) => {
           const isTodo = t.status === 'todo';
-          console.log(
-            `Task "${t.title}" status: ${t.status} -> todo: ${isTodo}`
-          );
           return isTodo;
         });
 
         this.inProgressTasks = filteredTasks.filter((t) => {
           const isInProgress = t.status === 'in-progress';
-          console.log(
-            `Task "${t.title}" status: ${t.status} -> in-progress: ${isInProgress}`
-          );
           return isInProgress;
         });
 
         this.doneTasks = filteredTasks.filter((t) => {
           const isDone = t.status === 'done';
-          console.log(
-            `Task "${t.title}" status: ${t.status} -> done: ${isDone}`
-          );
           return isDone;
         });
+
+        // UPDATE: Set the analytics array
+        this.allTasksForAnalytics = [
+          ...this.todoTasks,
+          ...this.inProgressTasks,
+          ...this.doneTasks,
+        ];
 
         console.log('FINAL COUNTS:');
         console.log('Todo:', this.todoTasks.length);
         console.log('In Progress:', this.inProgressTasks.length);
         console.log('Done:', this.doneTasks.length);
-        console.log('Todo tasks:', this.todoTasks);
-        console.log('In Progress tasks:', this.inProgressTasks);
-        console.log('Done tasks:', this.doneTasks);
       },
       error: (err) => console.error('Failed to load tasks', err),
     });
@@ -197,8 +195,6 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  // Add these properties to your DashboardComponent class
-
   // Sorting and filtering
   sortBy: 'title' | 'createdAt' | 'priority' = 'createdAt';
   sortDirection: 'asc' | 'desc' = 'desc';
@@ -209,13 +205,6 @@ export class DashboardComponent implements OnInit {
   categories: string[] = ['all', 'work', 'personal', 'urgent', 'meeting'];
 
   // Priority options
-  priorities = [
-    { value: 'all', label: 'All Priorities' },
-    { value: 'low', label: 'Low' },
-    { value: 'medium', label: 'Medium' },
-    { value: 'high', label: 'High' },
-  ];
-  selectedPriority: string = 'all';
 
   // Add this method to filter and sort tasks
   getFilteredAndSortedTasks(tasks: Task[]): Task[] {
@@ -296,33 +285,25 @@ export class DashboardComponent implements OnInit {
     this.selectedCategory = category;
   }
 
-  onPriorityChange(priority: string) {
-    this.selectedPriority = priority;
-  }
-
   // Reset all filters
   resetFilters() {
     this.searchQuery = '';
     this.selectedCategory = 'all';
-    this.selectedPriority = 'all';
     this.sortBy = 'createdAt';
     this.sortDirection = 'desc';
   }
 
   /** Handle drag & drop between lists */
   onTaskDropped(event: CdkDragDrop<Task[]>, newStatus: string) {
-    // Store the moved task for potential rollback
     const movedTask = { ...event.previousContainer.data[event.previousIndex] };
 
     if (event.previousContainer === event.container) {
-      // Reordering within same column
       moveItemInArray(
         event.container.data,
         event.previousIndex,
         event.currentIndex
       );
     } else {
-      // Move visually first for better UX
       transferArrayItem(
         event.previousContainer.data,
         event.container.data,
@@ -330,21 +311,43 @@ export class DashboardComponent implements OnInit {
         event.currentIndex
       );
 
-      // Update status in backend - use the provided newStatus parameter
-      // Fix the TypeScript error by asserting the status type
       this.taskService
         .updateTask(movedTask.id, {
           status: newStatus as 'todo' | 'in-progress' | 'done',
         })
         .subscribe({
+          next: () => {
+            this.triggerChartUpdate();
+          },
           error: (err) => {
             console.error('Failed to update task status', err);
-            // Rollback visually if update fails
-            this.loadTasks();
+            this.loadTasks(); // Full reload on error
           },
         });
     }
+
+    // Trigger update for client-side changes
+    this.triggerChartUpdate();
   }
+
+  private triggerChartUpdate(): void {
+    this.dataVersion++; // Increment to trigger change detection
+
+    // Force new array references for the task arrays
+    this.todoTasks = [...this.todoTasks];
+    this.inProgressTasks = [...this.inProgressTasks];
+    this.doneTasks = [...this.doneTasks];
+
+    // ALSO update the analytics array with a new reference
+    this.allTasksForAnalytics = [
+      ...this.todoTasks,
+      ...this.inProgressTasks,
+      ...this.doneTasks,
+    ];
+  }
+
+  // Update the getter to include the data version
+  allTasksForAnalytics: any[] = [];
 
   /** Handle task updates from inline editing */
   onTaskUpdated(updatedTask: Task) {
@@ -368,5 +371,9 @@ export class DashboardComponent implements OnInit {
         console.error('Failed to delete task', err);
       },
     });
+  }
+
+  toggleVisualizations(): void {
+    this.showVisualizations = !this.showVisualizations;
   }
 }
